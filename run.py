@@ -1,45 +1,66 @@
+#----------------------------------------------
+# Author: Gokul Dinesh
+# Month: Oct, 2018
+# Title: RecoME - Movie Recommendation Algorithm
+#----------------------------------------------
+
 import pandas as pd
 import numpy as np
 import math
 import random
 
-def recommend(a):
+#Recommendation Algorithm based on Rating and Genre
+def recommend(ratings):
     print("\n-----------------------------------------------------------------------------------------\nWe recommend:\n")
     x = []
     y = []
     z = []
     for p in range(2):
-        for i in a:
+        for i in ratings:
             rating = i[1]
             rank = 0
-            while (rating <= i[1]):
-                k = random.random()
-                rating = raw['Rating'][movies_genre[i[0]-1][math.floor(k*len(movies_genre[i[0]-1]))]-1]
-                rank = movies_genre[i[0]-1][math.floor(k*len(movies_genre[i[0]-1]))]
-                x.append(raw['Title'][movies_genre[i[0]-1][math.floor(k*len(movies_genre[i[0]-1]))]-1])
-                y.append(raw['Genre'][movies_genre[i[0]-1][math.floor(k*len(movies_genre[i[0]-1]))]-1])
-                z.append(raw['Rating'][movies_genre[i[0]-1][math.floor(k*len(movies_genre[i[0]-1]))]-1])
+            
+            if(len(movies_genre[i[0]-1]) > 0):
+                while (rating <= i[1]):
+                    k = random.random()
+                    k1 = math.floor(k*len(movies_genre[i[0]-1]))
+                    rank = movies_genre[i[0]-1][k1]
+                    rating = raw['Rating'][rank-1]
+            x1 = str(raw['Title'][rank-1]) + " (" + str(raw['Year'][rank-1])+")"
+            x.append(x1)
+            y.append(raw['Genre'][rank-1])
+            z.append(rating)
+                
     reco = pd.DataFrame(np.column_stack([x, y, z]), columns=['Title', 'Genre', 'Rating'])
     reco = reco.sort_values(by='Rating', ascending=False)
     reco = reco.drop_duplicates(subset = 'Title')
     reco = reco[['Title', 'Genre']]
+    
     print(reco.head().to_string(index=False))
-            #print(raw['Title'][movies_genre[i[0]-1][math.floor(k*len(movies_genre[i[0]-1]))]-1], '   [ Genre: ', raw['Genre'][movies_genre[i[0]-1][math.floor(k*len(movies_genre[i[0]-1]))]-1], '   IMDb Rating:', raw['Rating'][movies_genre[i[0]-1][math.floor(k*len(movies_genre[i[0]-1]))]-1],']')
     print("-----------------------------------------------------------------------------------------\nNew Recommendations? (y/n)")
     z = input()
     if(z == 'y' or z=='Y'):
-        recommend(a)
+        recommend(ratings)
 
+#Fetching Dataset
 fname = 'IMDB-Movie-Data-2006to2016.csv'
-
 raw = pd.read_csv(fname)
 
-genre = ["Action","Adventure","Animation","Biography","Comedy","Crime","Drama","Family","Fantasy","Fiction","History","Horror","Musical","Mystery","Romance","Sci-Fi","Sport","Thriller","War","Western"]
+genre = []
+
+#Fetching Genres from Dataset
+for i in raw['Genre']:
+    k = i.split(',')
+    for j in k:
+        genre.append(j)
+genre = list(set(genre))
+genre.sort()
 
 print('-----------------------------------------------------------------------------------------')
 print('                                     RecoME!')
 print('-----------------------------------------------------------------------------------------')
 
+#Classifying the dataset based on Genre
 Action = []
 Adventure = []
 Animation = []
@@ -106,59 +127,100 @@ for i in range (len(raw)):
             
 movies_genre = [Action,Adventure,Animation,Biography,Comedy,Crime,Drama,Family,Fantasy,Fiction,History,Horror,Musical,Mystery,Romance,SciFi,Sport,Thriller,War,Western]
 
-print ("\nPlease input the numbers corresponding to your 5 favourite genres: \n[1]\tAction\n[2]\tAdventure\n[3]\tAnimation\n[4]\tBiography\n[5]\tComedy\n[6]\tCrime\n[7]\tDrama\n[8]\tFamily\n[9]\tFantasy\n[10]\tFiction\n[11]\tHistory\n[12]\tHorror\n[13]\tMusical\n[14]\tMystery\n[15]\tRomance\n[16]\tSci-Fi\n[17]\tSport\n[18]\tThriller\n[19]\tWar\n[20]\tWestern")
+print ("\nPlease input the numbers corresponding to your 5 favourite genres:")
+for i in range(len(genre)):
+    print("[",i+1,"]\t",genre[i])
 
 fav_genres = []
-for i in range (5):
-    fav_genres.append(int(input()))
+c = 0
+while (c<5):
+    x = input()
+    if (x != ''):
+        try:
+            x = (int)(x)
+            if (x>=1 and x<=20):
+                if (x not in fav_genres):
+                    fav_genres.append(x)
+                    c = c+1
+                else:
+                   print('Genre already added') 
+            else:
+                print('Invalid input')
+        except:
+            print('Invalid input')
+    else:
+        print('Invalid input')
 
-print ("\nPlease rate the following movies on 10: (0 or skip for Not Watched)\n")
+print ("\nPlease rate the following movies on 10: (0 or skip for Not Watched)")
 
 user_rating = []
+temp1 = []
 for i in range (5):
-    for j in range (3):
-        k = random.random();
-        print(raw['Title'][movies_genre[fav_genres[i]-1][math.floor(k*len(movies_genre[fav_genres[i]-1]))]-1])
-        x = input()
-        if (x != ''):
-            x = (int)(x);
+    if (len(movies_genre[fav_genres[i]-1]) > 0):
+        for j in range (3):
+            k = random.random()
+            temp1.append(movies_genre[fav_genres[i]-1][math.floor(k*len(movies_genre[fav_genres[i]-1]))]-1)
+
+temp1 = list(set(temp1))
+i=0
+while (i < len(temp1)):
+    print (str(raw['Title'][temp1[i]])+" ("+str(raw['Year'][temp1[i]])+")")
+    x = input()
+    if (x != '' and x != '0'):
+        try:
+            x = (int)(x)
             if (x>=1 and x<=10):
-                user_rating.append([movies_genre[fav_genres[i]-1][math.floor(k*len(movies_genre[fav_genres[i]-1]))], x])
+                user_rating.append([temp1[i], x])
+            else:
+                flag = True
+                while (flag):
+                    print("Invalid input. Please rate again. (0 or skip for Not Watched)")
+                    x = input()
+                    if (x != '' and x != '0'):
+                        x = (int)(x)
+                        if (x>=1 and x<=10):
+                            user_rating.append([temp1[i], x])
+                            flag = False
+                    else:
+                        flag = False
+        except:
+            print("Invalid input. Please rate again. (0 or skip for Not Watched)")
+            i = i-1
+    i = i+1
+usr_rank = []
+usr_genre = []
 
-a = []
-n = []
-
+##### Fetching user's rating and analysing the mean rating per genre
 if (user_rating != []):
-        a=[]
-        b = pd.DataFrame(columns=['Genre','Rating'])
-        for i in user_rating:
-            if (i[1] >= raw['Rating'][i[0]-1]):
-                x = raw['Genre'][i[0]-1].split(',')
-                y = raw['Rating'][i[0]-1]
-                for j in x:
-                    a.append([j,y])
-                    n.append(j)
-        b = pd.DataFrame(a,columns=['Genre','Rating'])
+    usr_rank=[]
+    temp2 = pd.DataFrame(columns=['Genre','Rating'])
+    for i in user_rating:
+        if (i[1] >= raw['Rating'][i[0]-1]):
+            x = raw['Genre'][i[0]-1].split(',')
+            y = raw['Rating'][i[0]-1]
+            for j in x:
+                usr_rank.append([j,y])
+                usr_genre.append(j)
+    temp2 = pd.DataFrame(usr_rank,columns=['Genre','Rating'])
+    
+    if (len(temp2) == 0):
+        for i in fav_genres:
+            usr_rank.append([genre[i-1],7])
+            usr_genre.append(genre[i-1])
+        temp2 = pd.DataFrame(usr_rank,columns=['Genre','Rating'])
 
-        if (len(b) == 0):
-            for i in fav_genres:
-                a.append([genre[i-1],7])
-                n.append(genre[i-1])
-            b = pd.DataFrame(a,columns=['Genre','Rating'])
-
-        g = b.groupby('Genre')['Rating'].mean().values
-        n = list(set(n))
-        x_genre = []
-        #print (len(g))
-        #print(n)
-        print('-----------------------------------------------------------------------------------------')
-        for i in n:
-            for j in range(len(genre)):
-                if (genre[j] == i):
-                    x_genre.append(j+1)
-        a=[]
-        #print(len(x_genre))
-        #print(x_genre)
-        for i in range(len(g)):
-            a.append([x_genre[i],g[i]])
-        recommend(a)
+    usr_mean = temp2.groupby('Genre')['Rating'].mean().values
+    usr_genre = list(set(usr_genre))
+    
+    x_genre = []
+    print('-----------------------------------------------------------------------------------------')
+    for i in usr_genre:
+        for j in range(len(genre)):
+            if (genre[j] == i):
+                x_genre.append(j+1)
+    
+    usr_rank=[]
+    for i in range(len(usr_mean)):
+        usr_rank.append([x_genre[i],usr_mean[i]])
+        
+    recommend(usr_rank)   
