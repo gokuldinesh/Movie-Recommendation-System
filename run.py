@@ -1,3 +1,5 @@
+
+
 #----------------------------------------------
 # Author: Gokul Dinesh
 # Month: Oct, 2018
@@ -8,15 +10,16 @@ import pandas as pd
 import numpy as np
 import math
 import random
+from sklearn.cluster import KMeans
 
 #Recommendation Algorithm based on Rating and Genre
-def recommend(ratings):
+def recommend(data):
     print("\n-----------------------------------------------------------------------------------------\nWe recommend:\n")
     x = []
     y = []
     z = []
     for p in range(2):
-        for i in ratings:
+        for i in data:
             rating = i[1]
             rank = 0
             
@@ -40,7 +43,7 @@ def recommend(ratings):
     print("-----------------------------------------------------------------------------------------\nNew Recommendations? (y/n)")
     z = input()
     if(z == 'y' or z=='Y'):
-        recommend(ratings)
+        recommend(data)
 
 #Fetching Dataset
 fname = 'IMDB-Movie-Data-2006to2016.csv'
@@ -124,47 +127,24 @@ for i in range (len(raw)):
             War.append(i+1)
         if (j=="Western"):
             Western.append(i+1)
-            
+
 movies_genre = [Action,Adventure,Animation,Biography,Comedy,Crime,Drama,Family,Fantasy,Fiction,History,Horror,Musical,Mystery,Romance,SciFi,Sport,Thriller,War,Western]
-
-print ("\nPlease input the numbers corresponding to your 5 favourite genres:")
-for i in range(len(genre)):
-    print("[",i+1,"]\t",genre[i])
-
-fav_genres = []
-c = 0
-while (c<5):
-    x = input()
-    if (x != ''):
-        try:
-            x = (int)(x)
-            if (x>=1 and x<=20):
-                if (x not in fav_genres):
-                    fav_genres.append(x)
-                    c = c+1
-                else:
-                   print('Genre already added') 
-            else:
-                print('Invalid input')
-        except:
-            print('Invalid input')
-    else:
-        print('Invalid input')
 
 print ("\nPlease rate the following movies on 10: (0 or skip for Not Watched)")
 
 user_rating = []
 temp1 = []
-for i in range (5):
-    if (len(movies_genre[fav_genres[i]-1]) > 0):
-        for j in range (3):
-            k = random.random()
-            temp1.append(movies_genre[fav_genres[i]-1][math.floor(k*len(movies_genre[fav_genres[i]-1]))]-1)
+c = 0
+while (c <= 15):
+        k = random.random()
+        if(raw['Votes'][math.floor(k*len(raw))] > 50000):
+            temp1.append(raw['Rank'][math.floor(k*len(raw))])
+            c = c+1
 
 temp1 = list(set(temp1))
 i=0
 while (i < len(temp1)):
-    print (str(raw['Title'][temp1[i]])+" ("+str(raw['Year'][temp1[i]])+")")
+    print (str(raw['Title'][temp1[i]-1])+" ("+str(raw['Year'][temp1[i]-1])+")")
     x = input()
     if (x != '' and x != '0'):
         try:
@@ -187,40 +167,32 @@ while (i < len(temp1)):
             print("Invalid input. Please rate again. (0 or skip for Not Watched)")
             i = i-1
     i = i+1
+
 usr_rank = []
 usr_genre = []
 
 ##### Fetching user's rating and analysing the mean rating per genre
 if (user_rating != []):
-    usr_rank=[]
-    temp2 = pd.DataFrame(columns=['Genre','Rating'])
+    user_data = []
     for i in user_rating:
-        if (i[1] >= raw['Rating'][i[0]-1]):
-            x = raw['Genre'][i[0]-1].split(',')
-            y = raw['Rating'][i[0]-1]
-            for j in x:
-                usr_rank.append([j,y])
-                usr_genre.append(j)
-    temp2 = pd.DataFrame(usr_rank,columns=['Genre','Rating'])
-    
-    if (len(temp2) == 0):
-        for i in fav_genres:
-            usr_rank.append([genre[i-1],7])
-            usr_genre.append(genre[i-1])
-        temp2 = pd.DataFrame(usr_rank,columns=['Genre','Rating'])
+        for j in raw['Genre'][i[0]-1].split(','):
+            for k in range(len(genre)):
+                if (genre[k] == j):
+                    user_data.append([k+1,i[1]])
 
-    usr_mean = temp2.groupby('Genre')['Rating'].mean().values
-    usr_genre = list(set(usr_genre))
+    user_data = np.array(user_data)
+    kmeans = KMeans(n_clusters = 5,random_state = 0).fit(user_data)
     
-    x_genre = []
-    print('-----------------------------------------------------------------------------------------')
-    for i in usr_genre:
-        for j in range(len(genre)):
-            if (genre[j] == i):
-                x_genre.append(j+1)
-    
-    usr_rank=[]
-    for i in range(len(usr_mean)):
-        usr_rank.append([x_genre[i],usr_mean[i]])
+    main_genre = []
+    main_rating = []
+    for i in kmeans.cluster_centers_:
+        main_genre.append(int(round(i[0])))
+        main_rating.append(int(round(i[1])))
         
-    recommend(usr_rank)   
+    data=[]
+    for i in range(len(main_rating)):
+        data.append([main_genre[i],main_rating[i]])
+        
+    recommend(data)   
+
+
